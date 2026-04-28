@@ -74,8 +74,41 @@ class ReflexAgent(Agent):
         newGhostStates = successorGameState.getGhostStates()
         newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
 
-        "*** YOUR CODE HERE ***"
-        return successorGameState.getScore()
+        "*** YOUR CODE HERE ***" 
+        STOP_PENALTY = -99999       # A large negative penalty for stopping, to encourage Pacman to keep moving
+        GHOST_DANGER_RANGE = 3      # A distance threshold within which ghosts are considered a danger to Pacman
+        SCARED_GHOST_REWARD = 200   # A reward for being close to a scared ghost
+        GHOST_DANGER_PENALTY = 400  # A penalty for being close to a non-scared ghost
+        MIN_SCARED_TIME = 3         # A threshold for the scared timer
+        
+        # 对停止进行惩罚
+        if action == 'Stop':                                                                                                                               
+            return STOP_PENALTY
+        
+        # 定义初始分数
+        score = successorGameState.getScore()
+        
+        # 根据距离食物的距离调整分数，距离越近分数越高
+        foodList = newFood.asList()
+        
+        if len(foodList) > 0:
+            minDist = min([manhattanDistance(newPos, food) for food in foodList])
+            score = score + 1.0 / (minDist + 1)
+        
+        # 根据与幽灵的距离调整分数
+        for ghost in newGhostStates:
+            ghostPos = ghost.getPosition()
+            dist = manhattanDistance(newPos, ghostPos)
+            # 如果幽灵在附近，根据幽灵是否害怕调整分数，害怕的幽灵越近分数越高，不害怕的幽灵越近分数越低
+            if ghost.scaredTimer > 0:
+                if ghost.scaredTimer > MIN_SCARED_TIME:
+                    score = score + SCARED_GHOST_REWARD * (MIN_SCARED_TIME - dist)
+            else:
+                if dist < GHOST_DANGER_RANGE:
+                    score = score - GHOST_DANGER_PENALTY * (GHOST_DANGER_RANGE - dist)
+            
+
+        return score
 
 def scoreEvaluationFunction(currentGameState: GameState):
     """
