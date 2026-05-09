@@ -75,7 +75,7 @@ class ReflexAgent(Agent):
         newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
 
         "*** YOUR CODE HERE ***" 
-        STOP_PENALTY = -99999       # A large negative penalty for stopping, to encourage Pacman to keep moving
+        STOP_PENALTY = -500       # A large negative penalty for stopping, to encourage Pacman to keep moving
         GHOST_DANGER_RANGE = 3      # A distance threshold within which ghosts are considered a danger to Pacman
         SCARED_GHOST_REWARD = 200   # A reward for being close to a scared ghost
         GHOST_DANGER_PENALTY = 400  # A penalty for being close to a non-scared ghost
@@ -190,7 +190,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
             if gameState.isWin() or gameState.isLose() or depth == 0:
                 return self.evaluationFunction(gameState)
             
-            # 计算下一个代理的索引和深度
+            # 计算下一个agent的索引和深度
             nextAgentIndex = (agentIndex + 1) % gameState.getNumAgents()
             nextDepth = depth - 1 if nextAgentIndex == 0 else depth
             
@@ -217,7 +217,54 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        legalActions = gameState.getLegalActions(0)
+        bestScore = float('-inf')
+        bestAction = None
+        alpha = float('-inf')
+        beta = float('inf')
+        
+        # 对每个合法动作，计算其对应的分数，并选择分数最高的动作
+        for action in legalActions:
+            successor = gameState.generateSuccessor(0, action)
+            value = self._value(successor, self.depth, 1, alpha, beta)
+            if value > bestScore:
+                bestScore = value
+                bestAction = action
+            alpha = max(alpha, bestScore)
+                
+        return bestAction
+    
+    # 递归计算Minimax值的函数
+    def _value(self, gameState, depth, agentIndex, alpha, beta):
+            # 终止条件
+            if gameState.isWin() or gameState.isLose() or depth == 0:
+                return self.evaluationFunction(gameState)
+            
+            # 计算下一个agent的索引和深度
+            nextAgentIndex = (agentIndex + 1) % gameState.getNumAgents()
+            nextDepth = depth - 1 if nextAgentIndex == 0 else depth
+            
+            # 获取当前代理的合法动作，并计算每个动作对应的Minimax值
+            legalMoves = gameState.getLegalActions(agentIndex)
+            
+            if agentIndex == 0:  # Pacman (maximizing player)
+                value = float('-inf')
+                for move in legalMoves:
+                    nextState = gameState.generateSuccessor(0 , move)
+                    value = max(value, self._value(nextState, nextDepth, nextAgentIndex, alpha, beta))
+                    if value >= beta:
+                        return value
+                    alpha = max(alpha, value)
+                return value
+            else:  # Ghosts (minimizing players)
+                value = float('inf')
+                for move in legalMoves:
+                    nextState = gameState.generateSuccessor(agentIndex, move)
+                    value = min(value, self._value(nextState, nextDepth, nextAgentIndex, alpha, beta))
+                    if value <= alpha:
+                        return value
+                    beta = min(beta, value)
+                return value
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
