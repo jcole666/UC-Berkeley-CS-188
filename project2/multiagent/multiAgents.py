@@ -319,10 +319,52 @@ def betterEvaluationFunction(currentGameState: GameState):
     Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
     evaluation function (question 5).
 
-    DESCRIPTION: <write something here so we know what you did>
+    DESCRIPTION: 综合四个特征评估局面：
+    (1) 输赢直接返回极端值
+    (2) 到最近食物的倒数距离（越近越好）
+    (3) 剩余胶囊数量惩罚（越少越好，鼓励吃胶囊）
+    (4) 幽灵距离：害怕幽灵越近越好，正常幽灵越远越好
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    # 1. 输赢判断（最高优先级）
+    if currentGameState.isWin():
+        return float('inf')
+    if currentGameState.isLose():
+        return float('-inf')
+
+    # 2. 提取基本信息
+    pos = currentGameState.getPacmanPosition()
+    food = currentGameState.getFood()
+    foodList = food.asList()
+    capsules = currentGameState.getCapsules()
+    ghostStates = currentGameState.getGhostStates()
+    score = currentGameState.getScore()
+
+    # 3. 食物特征：离最近食物越近越好
+    if foodList:
+        minFoodDist = min([manhattanDistance(pos, f) for f in foodList])
+        foodScore = 1.0 / (minFoodDist + 1)
+    else:
+        foodScore = 0
+
+    # 4. 胶囊特征：剩余胶囊越少越好
+    capsuleScore = -len(capsules) * 20
+
+    # 5. 幽灵特征
+    ghostScore = 0
+    for ghost in ghostStates:
+        dist = manhattanDistance(pos, ghost.getPosition())
+        if ghost.scaredTimer > 0:
+            ghostScore += 200.0 / (dist + 1)
+        else:
+            if dist < 2:
+                ghostScore -= 500
+            else:
+                ghostScore -= 1.0 / (dist + 1)
+
+    # 6. 加权求和
+    return score + foodScore * 10 + ghostScore + capsuleScore
 
 # Abbreviation
 better = betterEvaluationFunction
